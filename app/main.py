@@ -106,11 +106,30 @@ def get_llm() -> BaseChatModel:
     if provider == "anthropic":
         api_key = os.getenv("ANTHROPIC_API_KEY")
         model = os.getenv("LLM_MODEL")
+        base_url = os.getenv("ANTHROPIC_BASE_URL")
+    
         if not api_key:
-            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set.")
+            raise HTTPException(
+                status_code=500,
+                detail="ANTHROPIC_API_KEY not set.",
+            )
+    
         if not model:
-            raise HTTPException(status_code=500, detail="LLM_MODEL not set.")
-        return ChatAnthropic(api_key=api_key, model=model)  # type: ignore[call-arg]
+            raise HTTPException(
+                status_code=500,
+                detail="LLM_MODEL not set.",
+            )
+    
+        llm_kwargs = {
+            "api_key": api_key,
+            "model": model,
+            "temperature": 0.0,
+        }
+    
+        if base_url:
+            llm_kwargs["base_url"] = base_url.rstrip("/")
+    
+        return ChatAnthropic(**llm_kwargs)
     if provider == "google":
         api_key = os.getenv("GOOGLE_API_KEY")
         model = os.getenv("LLM_MODEL")
