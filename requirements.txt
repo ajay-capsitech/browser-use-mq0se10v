@@ -1,0 +1,7 @@
+browser-use
+fastapi
+python-dotenv
+uvicorn[standard]
+playwright
+uv
+
