@@ -89,7 +89,7 @@ async def health() -> dict[str, str]:
 
 def get_llm() -> BaseChatModel:
     # Select provider based on env to keep deploys configurable.
-    provider = os.getenv("LLM_PROVIDER", "anthropic").lower()
+    provider = os.getenv("LLM_PROVIDER", "browser_use").lower()
     if provider == "browser_use":
         api_key = "bu_WiQ2PaTPlvq0x2zwBZrkxXT1i_o8y0tvEKXviyi-JaI"
         if not api_key:
