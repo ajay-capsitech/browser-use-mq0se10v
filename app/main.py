@@ -88,57 +88,111 @@ async def health() -> dict[str, str]:
 
 
 def get_llm() -> BaseChatModel:
-    # Select provider based on env to keep deploys configurable.
-    provider = os.getenv("LLM_PROVIDER", "browser_use").lower()
-    if provider == "browser_use":
-        api_key = "bu_WiQ2PaTPlvq0x2zwBZrkxXT1i_o8y0tvEKXviyi-JaI"
-        if not api_key:
-            raise HTTPException(status_code=500, detail="BROWSER_USE_API_KEY not set.")
-        return ChatBrowserUse()
-    if provider == "openai":
-        api_key = os.getenv("OPENAI_API_KEY")
-        model = os.getenv("LLM_MODEL")
-        if not api_key:
-            raise HTTPException(status_code=500, detail="OPENAI_API_KEY not set.")
-        if not model:
-            raise HTTPException(status_code=500, detail="LLM_MODEL not set.")
-        return ChatOpenAI(api_key=api_key, model=model)  # type: ignore[call-arg]
+    # Do not silently fall back to Browser Use Cloud.
+    provider = os.getenv("LLM_PROVIDER", "").strip().lower()
+
+    logger.info("Configured LLM_PROVIDER=%r", provider)
+
+    if not provider:
+        raise HTTPException(
+            status_code=500,
+            detail="LLM_PROVIDER is not set. Configure it in the Render dashboard.",
+        )
+
     if provider == "anthropic":
         api_key = os.getenv("ANTHROPIC_API_KEY")
         model = os.getenv("LLM_MODEL")
         base_url = os.getenv("ANTHROPIC_BASE_URL")
-    
+
         if not api_key:
             raise HTTPException(
                 status_code=500,
-                detail="ANTHROPIC_API_KEY not set.",
+                detail="ANTHROPIC_API_KEY is not set.",
             )
-    
+
         if not model:
             raise HTTPException(
                 status_code=500,
-                detail="LLM_MODEL not set.",
+                detail="LLM_MODEL is not set.",
             )
-    
-        llm_kwargs = {
-            "api_key": api_key,
-            "model": model,
-            "temperature": 0.0,
-        }
-    
-        if base_url:
-            llm_kwargs["base_url"] = base_url.rstrip("/")
-    
-        return ChatAnthropic(**llm_kwargs)
+
+        if not base_url:
+            raise HTTPException(
+                status_code=500,
+                detail="ANTHROPIC_BASE_URL is not set.",
+            )
+
+        logger.info(
+            "Using Azure Foundry Claude deployment: model=%s, base_url=%s",
+            model,
+            base_url,
+        )
+
+        return ChatAnthropic(
+            api_key=api_key,
+            model=model,
+            base_url=base_url.rstrip("/"),
+            temperature=0.0,
+        )
+
+    if provider == "openai":
+        api_key = os.getenv("OPENAI_API_KEY")
+        model = os.getenv("LLM_MODEL")
+
+        if not api_key:
+            raise HTTPException(
+                status_code=500,
+                detail="OPENAI_API_KEY is not set.",
+            )
+
+        if not model:
+            raise HTTPException(
+                status_code=500,
+                detail="LLM_MODEL is not set.",
+            )
+
+        return ChatOpenAI(
+            api_key=api_key,
+            model=model,
+        )  # type: ignore[call-arg]
+
     if provider == "google":
         api_key = os.getenv("GOOGLE_API_KEY")
         model = os.getenv("LLM_MODEL")
+
         if not api_key:
-            raise HTTPException(status_code=500, detail="GOOGLE_API_KEY not set.")
+            raise HTTPException(
+                status_code=500,
+                detail="GOOGLE_API_KEY is not set.",
+            )
+
         if not model:
-            raise HTTPException(status_code=500, detail="LLM_MODEL not set.")
-        return ChatGoogle(api_key=api_key, model=model)  # type: ignore[call-arg]
-    raise HTTPException(status_code=500, detail=f"Unsupported LLM_PROVIDER: {provider}")
+            raise HTTPException(
+                status_code=500,
+                detail="LLM_MODEL is not set.",
+            )
+
+        return ChatGoogle(
+            api_key=api_key,
+            model=model,
+        )  # type: ignore[call-arg]
+
+    # Optional. Use this only when you deliberately want Browser Use Cloud.
+    if provider == "browser_use":
+        api_key = os.getenv("BROWSER_USE_API_KEY")
+
+        if not api_key:
+            raise HTTPException(
+                status_code=500,
+                detail="BROWSER_USE_API_KEY is not set.",
+            )
+
+        return ChatBrowserUse(api_key=api_key)
+
+    raise HTTPException(
+        status_code=500,
+        detail=f"Unsupported LLM_PROVIDER: {provider}",
+    )
 
 
 def get_browser_session() -> BrowserSession:
