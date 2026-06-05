@@ -91,7 +91,7 @@ def get_llm() -> BaseChatModel:
     # Select provider based on env to keep deploys configurable.
     provider = os.getenv("LLM_PROVIDER", "anthropic").lower()
     if provider == "browser_use":
-        api_key = os.getenv("BROWSER_USE_API_KEY")
+        api_key = "bu_WiQ2PaTPlvq0x2zwBZrkxXT1i_o8y0tvEKXviyi-JaI"
         if not api_key:
             raise HTTPException(status_code=500, detail="BROWSER_USE_API_KEY not set.")
         return ChatBrowserUse()
